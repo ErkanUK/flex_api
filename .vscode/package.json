@@ -1,0 +1,15 @@
+{
+  "name": "flexibility-products-docs",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "serve": "http-server docs -p 8000 -c-1",
+    "lint": "npx @stoplight/spectral-cli lint docs/openapi.yaml --preset=spectral:oas",
+    "redoc": "redoc-cli serve docs/openapi.yaml --port 8010"
+  },
+  "devDependencies": {
+    "@stoplight/spectral-cli": "^7.0.0",
+    "redoc-cli": "^0.13.6",
+    "http-server": "^14.1.1"
+  }
+}
