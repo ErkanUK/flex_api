@@ -1,4 +1,3 @@
-cat <<'EOF' > package.json
 {
   "name": "flexibility-products-docs",
   "version": "1.0.0",
@@ -7,4 +6,3 @@ cat <<'EOF' > package.json
     "serve": "npx http-server docs -p 8000 -c-1"
   }
 }
-EOF
