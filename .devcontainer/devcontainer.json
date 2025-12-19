@@ -12,10 +12,7 @@
         "redhat.vscode-yaml",
         "42Crunch.vscode-openapi",
         "stoplight.spectral"
-      ],
-      "settings": {
-        "terminal.integrated.shell.linux": "/bin/bash"
-      }
+      ]
     }
   },
   "forwardPorts": [8000],
