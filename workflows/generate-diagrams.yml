@@ -1,11 +1,11 @@
-name: Generate Diagrams from LinkML
+name: Generate Diagrams from LinkML (using existing script)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - 'docs/**'
-      - 'docs/*.linkml.yaml'
+      - 'tools/linkml_to_puml.py'
       - '.github/workflows/generate-diagrams.yml'
   workflow_dispatch:
 
@@ -16,7 +16,6 @@ jobs:
   generate-and-render:
     runs-on: ubuntu-22.04
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -28,83 +27,39 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Python deps (PyYAML)
+      - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
           python -m pip install pyyaml
 
-      - name: Create output dir
+      - name: Ensure output dir exists
         run: |
           mkdir -p docs/diagrams/generated
 
-      - name: Convert LinkML -> PlantUML (.puml)
-        # Inline Python converter: reads LinkML YAML and writes a simple PUML per class
+      - name: Run linkml_to_puml.py
         run: |
-          python - <<'PY'
-          import sys, yaml, pathlib
-          src = pathlib.Path("docs/flexibility_products.linkml.yaml")
-          if not src.exists():
-              print("Source LinkML not found:", src)
-              sys.exit(0)
-          data = yaml.safe_load(src.read_text())
-          classes = data.get("classes", {}) or {}
-          slots = data.get("slots", {}) or {}
-
-          outp = pathlib.Path("docs/diagrams/generated/flexibility_products_auto.puml")
-          lines = ["@startuml", "title Auto-generated: flexibility_products.linkml.yaml", ""]
-          # write classes and attributes
-          for cname, cdef in classes.items():
-              lines.append(f"class {cname} {{")
-              for s in (cdef.get("slots") or []):
-                  # slot can be a dict or name
-                  sname = s if isinstance(s, str) else s.get("name", "<slot>")
-                  sdef = slots.get(sname, {}) or {}
-                  r = sdef.get("range", "string")
-                  mult = sdef.get("multivalued", False)
-                  ident = sdef.get("identifier", False)
-                  prefix = "+" if ident else "-"
-                  suffix = "[]" if mult else ""
-                  lines.append(f"  {prefix} {sname} : {r}{suffix}")
-              lines.append("}")
-              lines.append("")
-          # infer simple relationships from slots with class ranges
-          for sname, sdef in slots.items():
-              r = sdef.get("range")
-              if isinstance(r, str) and r in classes:
-                  # find classes that use this slot
-                  for cname, cdef in classes.items():
-                      if sname in (cdef.get("slots") or []):
-                          mult = sdef.get("multivalued", False)
-                          lines.append(f'{cname} "1" --> {"\"0..*\"" if mult else "\"1\""} {r} : {sname}')
-          lines.append("")
-          lines.append("@enduml")
-          outp.parent.mkdir(parents=True, exist_ok=True)
-          outp.write_text("\n".join(lines), encoding="utf-8")
-          print("Wrote", outp)
-          PY
-
-      - name: Show generated PUML files
-        run: |
-          find docs/diagrams -name '*.puml' -print || true
+          # adjust input/output paths if your files live elsewhere
+          python tools/linkml_to_puml.py docs/flexibility_products.linkml.yaml docs/diagrams/generated/flexibility_products_auto.puml
+          echo "Generated PUML:"
           sed -n '1,200p' docs/diagrams/generated/flexibility_products_auto.puml || true
 
-      - name: Install Graphviz and Java (for PlantUML rendering)
+      - name: Install Java + Graphviz
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends openjdk-11-jre-headless graphviz curl unzip
+          sudo apt-get install -y --no-install-recommends openjdk-17-jre-headless graphviz curl unzip
           sudo rm -rf /var/lib/apt/lists/*
 
       - name: Download plantuml.jar
         run: |
           mkdir -p /opt/plantuml
           curl -sL -o /opt/plantuml/plantuml.jar https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar
-          echo "Downloaded plantuml.jar" && java -jar /opt/plantuml/plantuml.jar -version || true
+          java -jar /opt/plantuml/plantuml.jar -version || true
 
       - name: Render PUML -> SVG and PNG
         run: |
-          # render all .puml under docs/diagrams
-          find docs/diagrams -type f -name '*.puml' | while read -r f; do
-            echo "Rendering $f"
+          # render everything under docs/diagrams/generated and docs/diagrams
+          find docs/diagrams -type f -name '*.puml' -print0 | while IFS= read -r -d '' f; do
+            echo "Rendering: $f"
             java -jar /opt/plantuml/plantuml.jar -tsvg "$f" || true
             java -jar /opt/plantuml/plantuml.jar -tpng "$f" || true
           done
@@ -113,7 +68,7 @@ jobs:
         run: |
           find docs/diagrams -type f \( -name '*.svg' -o -name '*.png' \) -print || true
 
-      - name: Commit and push generated diagrams (if any)
+      - name: Commit & push generated diagrams (if any)
         env:
           GIT_AUTHOR_NAME: "github-actions[bot]"
           GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
@@ -124,7 +79,6 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m "ci: auto-generate diagrams from LinkML [skip ci]" || true
             git push origin HEAD || true
-            echo "Committed generated diagrams"
           else
-            echo "No changes to commit"
+            echo "No generated changes to commit."
           fi
