@@ -1,0 +1,50 @@
+name: Extract Message Models from OpenAPI
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - 'openapi.yaml'
+      - 'docs/openapi.yaml'
+      - 'tools/oas_extract_schemas.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract-schemas:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install pyyaml
+
+      - name: Extract JSON Schemas
+        run: |
+          mkdir -p schemas
+          python tools/oas_extract_schemas.py openapi.yaml schemas
+
+      - name: Show extracted schemas
+        run: |
+          ls -la schemas
+          sed -n '1,200p' schemas/*.json || true
+
+      - name: Commit generated message schemas
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add schemas
+          if ! git diff --cached --quiet; then
+            git commit -m "ci: extract message schemas from OpenAPI [skip ci]"
+            git push
+          else
+            echo "No schema changes"
+          fi

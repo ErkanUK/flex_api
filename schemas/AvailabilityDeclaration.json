@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft/2020-12/schema",
+  "title": "AvailabilityDeclaration",
+  "type": "object",
+  "required": [
+    "productId",
+    "providerId",
+    "availabilityWindowStart",
+    "availabilityWindowEnd"
+  ],
+  "properties": {
+    "productId": {
+      "type": "string",
+      "description": "Flexibility product id"
+    },
+    "providerId": {
+      "type": "string",
+      "description": "Identifier for the FSP (market participant)"
+    },
+    "availabilityWindowStart": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "availabilityWindowEnd": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "declaredVolume": {
+      "type": "string",
+      "description": "Declared availability volume (units as agreed with DSO; doc typically uses kW/MW)."
+    },
+    "timeVariableVolumes": {
+      "type": "array",
+      "description": "Optional time series of volumes within the availability window.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "periodStart": { "type": "string", "format": "date-time" },
+          "periodEnd": { "type": "string", "format": "date-time" },
+          "volume": { "type": "string" }
+        },
+        "required": ["periodStart", "periodEnd", "volume"]
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Free-form metadata for interim/end-state flags (DSO-specific).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
