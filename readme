@@ -1,3 +1,5 @@
-This is am OAS 3.0 API specification
+This is an OAS 3.0 API specification
 It is an example definition with only 1 GET operation for documentation purposes.
 We are using ChatGPT and Copilot to develop generic building blocks.
+
+We strive to create machine readable models. Therefor we use LinkML, SKOS and RDF type data where we can.
