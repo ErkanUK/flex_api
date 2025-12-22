@@ -3,3 +3,22 @@ It is an example definition with only 1 GET operation for documentation purposes
 We are using ChatGPT and Copilot to develop generic building blocks.
 
 We strive to create machine readable models. Therefor we use LinkML, SKOS and RDF type data where we can.
+
+# Scripts
+
+This folder contains helper scripts used to generate and maintain repo artifacts.
+
+## `render-diagrams.sh`
+
+Renders PlantUML `.puml` files found under `docs/diagrams` and `docs/maps` to SVG and/or PNG.
+
+Usage:
+```bash
+# SVG (default)
+scripts/render-diagrams.sh
+
+# PNG
+scripts/render-diagrams.sh png
+
+# Both
+scripts/render-diagrams.sh both
