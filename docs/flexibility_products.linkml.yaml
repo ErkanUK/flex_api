@@ -1,5 +1,5 @@
 id: http://example.org/flexibility-products
-name: flexibility_products
+name: flexibility_products_from_oas
 version: "1.0.0"
 license: CC0-1.0
 
@@ -10,59 +10,347 @@ prefixes:
 default_prefix: ex
 default_range: string
 
-imports: []
-
-########################
-# Types
-########################
 types:
   string:
     base: xsd:string
+  dateTime:
+    base: xsd:dateTime
+  boolean:
+    base: xsd:boolean
 
-########################
-# Slots
-########################
+enums:
+  ServiceStructureEnum:
+    description: serviceStructure values from OAS
+    permissible_values:
+      - Utilisation Only
+      - Availability and Utilisation
+
+  AcceptanceTimingEnum:
+    permissible_values:
+      - At Trade
+      - After Trade
+
+  YesNo:
+    permissible_values:
+      - "Yes"
+      - "No"
+
+  AvailabilityPaymentUnit:
+    permissible_values:
+      - "£/MW/h"
+      - "£/MWh"
+      - "£/h"
+
+  AvailabilityPeriodUnit:
+    permissible_values:
+      - "Electricity Forward Agreement (EFA) blocks"
+      - "Settlement Periods"
+      - "Minutes"
+
+  DeliveryExpectationEnum:
+    permissible_values:
+      - Continuous
+      - Peak Delivery
+
+  UtilisationInstructionTimingEnum:
+    permissible_values:
+      - At Trade
+      - Operational
+      - Real Time
+      - Day Ahead
+      - Week Ahead
+
+  UtilisationPaymentUnit:
+    permissible_values:
+      - "£/MWh"
+      - "£/MW/season"
+
+  UtilisationPeriodUnit:
+    permissible_values:
+      - "Electricity Forward Agreement (EFA) blocks"
+      - "Settlement Periods"
+      - "Minutes"
+
+  InstructionStatus:
+    permissible_values:
+      - Accepted
+      - Rejected
+      - PartiallyAccepted
+
 slots:
-  service_id:
-    description: Unique identifier for a service.
+  # FlexibilityProduct
+  id:
+    description: Identifier for the Flexibility Product
     identifier: true
     range: string
 
-  service_name:
-    description: Human-readable name of the service.
+  name:
     range: string
 
-  items:
-    description: List of services returned by the API.
+  description:
+    range: string
+
+  serviceStructure:
+    range: ServiceStructureEnum
+
+  priceSettingTimescales:
+    range: string
+
+  availabilityRequirements:
+    range: AvailabilityRequirements
+
+  utilisationRequirements:
+    range: UtilisationRequirements
+
+  notes:
+    range: string
+
+  # AvailabilityRequirements slots
+  acceptanceTiming:
+    range: AcceptanceTimingEnum
+
+  availabilityChangesAllowed:
+    range: YesNo
+
+  availabilityPaymentUnit:
+    range: AvailabilityPaymentUnit
+
+  availabilityPeriod:
+    range: AvailabilityPeriodUnit
+
+  availabilityRefinementTiming:
+    range: string
+
+  availabilityRequestMechanism:
+    range: string
+
+  minimumAggregateUnitSize:
+    range: string
+
+  partialAvailabilityAcceptancePossible:
+    range: YesNo
+
+  timeVariableAvailabilityVolumesAllowed:
+    range: YesNo
+
+  # UtilisationRequirements slots
+  deliveryExpectation:
+    range: DeliveryExpectationEnum
+
+  maximumResponseTime:
+    range: string
+
+  minimumUtilisationTime:
+    range: string
+
+  minimumUtilisationVolume:
+    range: string
+
+  partialUtilisationInstructionPossible:
+    range: YesNo
+
+  paymentsDuringResponseTime:
+    range: YesNo
+
+  timeVariableUtilisationVolumesAllowed:
+    range: YesNo
+
+  utilisationInstructionTimings:
+    range: UtilisationInstructionTimingEnum
     multivalued: true
-    range: Service
 
-########################
-# Classes
-########################
+  utilisationPaymentUnit:
+    range: UtilisationPaymentUnit
+
+  utilisationPeriod:
+    range: UtilisationPeriodUnit
+
+  # AvailabilityDeclaration
+  productId:
+    description: Flexibility product id (references FlexibilityProduct.id)
+    range: string
+
+  providerId:
+    range: string
+
+  availabilityWindowStart:
+    range: dateTime
+
+  availabilityWindowEnd:
+    range: dateTime
+
+  declaredVolume:
+    range: string
+
+  timeVariableVolumes:
+    description: Optional time series of volumes within the availability window
+    multivalued: true
+    range: TimeVariableVolume
+
+  metadata:
+    range: string
+
+  # AvailabilityResponse
+  declarationId:
+    range: string
+
+  acceptedVolume:
+    range: string
+
+  partialAcceptance:
+    range: boolean
+
+  acceptanceTimestamp:
+    range: dateTime
+
+  response_notes:
+    range: string
+
+  # TimeVariableVolume (used in both availability and utilisation)
+  periodStart:
+    range: dateTime
+
+  periodEnd:
+    range: dateTime
+
+  volume:
+    range: string
+
+  # UtilisationInstruction
+  instructionId:
+    description: Instruction identifier
+    identifier: true
+    range: string
+
+  targetStart:
+    range: dateTime
+
+  targetEnd:
+    range: dateTime
+
+  instructionVolume:
+    range: string
+
+  partialInstruction:
+    range: boolean
+
+  responseTimeRequirement:
+    range: string
+
+  deliveryExpectationSlot:
+    range: DeliveryExpectationEnum
+
+  timeVariableVolumesForInstruction:
+    multivalued: true
+    range: TimeVariableVolume
+
+  # InstructionAck
+  ack_instructionId:
+    range: string
+
+  ack_providerId:
+    range: string
+
+  ackTimestamp:
+    range: dateTime
+
+  status:
+    range: InstructionStatus
+
+  ack_notes:
+    range: string
+
 classes:
-  Service:
-    description: Represents a single service returned by the Flexibility Products API.
+  FlexibilityProduct:
+    description: Top-level product model
     slots:
-      - service_id
-      - service_name
+      - id
+      - name
+      - description
+      - serviceStructure
+      - priceSettingTimescales
+      - availabilityRequirements
+      - utilisationRequirements
+      - notes
 
-  ServicesResponse:
-    description: Response wrapper for the GET /services endpoint.
+  FlexibilityProductCreate:
+    description: POST payload for creating a product (same shape as FlexibilityProduct)
+    is_a: FlexibilityProduct
+
+  AvailabilityRequirements:
     slots:
-      - items
+      - acceptanceTiming
+      - availabilityChangesAllowed
+      - availabilityPaymentUnit
+      - availabilityPeriod
+      - availabilityRefinementTiming
+      - availabilityRequestMechanism
+      - minimumAggregateUnitSize
+      - partialAvailabilityAcceptancePossible
+      - timeVariableAvailabilityVolumesAllowed
 
-########################
-# Examples
-########################
+  UtilisationRequirements:
+    slots:
+      - deliveryExpectation
+      - maximumResponseTime
+      - minimumUtilisationTime
+      - minimumUtilisationVolume
+      - partialUtilisationInstructionPossible
+      - paymentsDuringResponseTime
+      - timeVariableUtilisationVolumesAllowed
+      - utilisationInstructionTimings
+      - utilisationPaymentUnit
+      - utilisationPeriod
+
+  AvailabilityDeclaration:
+    description: Payload from FSP to DSO declaring availability
+    slots:
+      - productId
+      - providerId
+      - availabilityWindowStart
+      - availabilityWindowEnd
+      - declaredVolume
+      - timeVariableVolumes
+      - metadata
+
+  AvailabilityResponse:
+    slots:
+      - declarationId
+      - acceptedVolume
+      - partialAcceptance
+      - acceptanceTimestamp
+      - response_notes
+
+  TimeVariableVolume:
+    description: Reusable item type for time-variable volumes
+    slots:
+      - periodStart
+      - periodEnd
+      - volume
+
+  UtilisationInstruction:
+    slots:
+      - productId
+      - instructionId
+      - targetStart
+      - targetEnd
+      - instructionVolume
+      - partialInstruction
+      - responseTimeRequirement
+      - deliveryExpectation
+      - timeVariableVolumesForInstruction
+
+  InstructionAck:
+    slots:
+      - ack_instructionId
+      - ack_providerId
+      - ackTimestamp
+      - status
+      - ack_notes
+
 examples:
-  example_service:
-    id: ex:svc1
-    service_id: "svc-001"
-    service_name: "Example Service"
-
-  example_services_response:
-    id: ex:response1
-    items:
-      - service_id: "svc-001"
-        service_name: "Example Service"
+  example_flex_product:
+    id: ex:peak-reduction-v1
+    name: "Peak Reduction"
+    serviceStructure: "Utilisation Only"
+    priceSettingTimescales: "At Trade"
