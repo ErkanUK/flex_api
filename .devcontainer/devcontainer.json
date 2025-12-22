@@ -11,8 +11,17 @@
         "esbenp.prettier-vscode",
         "redhat.vscode-yaml",
         "42Crunch.vscode-openapi",
-        "stoplight.spectral"
-      ]
+        "stoplight.spectral",
+        "jebbs.plantuml",                 // PlantUML extension
+        "vstirbu.vscode-mermaid-preview", // Mermaid preview for Markdown
+        "shitalam.shitalam-uml-viewer"    // combined PlantUML + Mermaid viewer (optional)
+      ],
+      "settings": {
+        "plantuml.server": "https://www.plantuml.com/plantuml",
+        "plantuml.render": "PlantUMLServer",
+        // If you want the PlantUML extension to render SVG by default:
+        "plantuml.format": "svg"
+      }
     }
   },
   "forwardPorts": [8000],
