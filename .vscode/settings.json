@@ -1,5 +1,6 @@
 {
   "plantuml.server": "https://www.plantuml.com/plantuml",
+  "plantuml.trace.server": true,
   "plantuml.render": "PlantUMLServer",
   "plantuml.format": "svg",
   "markdown.preview.breaks": true
