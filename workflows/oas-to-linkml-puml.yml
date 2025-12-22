@@ -1,0 +1,188 @@
+name: OpenAPI → LinkML → PUML → Diagrams
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - 'openapi.yaml'
+      - 'docs/**/*.linkml.yaml'
+      - 'tools/linkml_to_puml.py'
+      - '.github/workflows/oas-to-linkml-puml.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  oas-to-diagrams:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+
+      - name: Ensure output directories
+        run: |
+          mkdir -p docs/diagrams/generated
+          mkdir -p docs
+
+      - name: Convert OpenAPI (components/schemas) → LinkML
+        run: |
+          python - <<'PY'
+          # Minimal, conservative OpenAPI -> LinkML converter.
+          # Maps components/schemas -> LinkML classes and slots. Does not invent semantics.
+          import sys, yaml, re, pathlib
+          src = pathlib.Path("openapi.yaml")
+          if not src.exists():
+              # try docs/openapi.yaml fallback
+              src = pathlib.Path("docs/openapi.yaml")
+          if not src.exists():
+              print("No OpenAPI file found (openapi.yaml or docs/openapi.yaml). Exiting.")
+              sys.exit(0)
+
+          spec = yaml.safe_load(src.read_text(encoding='utf-8'))
+          components = spec.get("components", {}) or {}
+          schemas = components.get("schemas", {}) or {}
+
+          linkml = {
+              "id": "http://example.org/flexibility-products-from-oas",
+              "name": "flexibility_products_from_oas",
+              "version": spec.get("info", {}).get("version", "0.0.0"),
+              "prefixes": {"ex": "http://example.org/", "xsd":"http://www.w3.org/2001/XMLSchema#"},
+              "default_prefix": "ex",
+              "types": {"string": {"base": "xsd:string"}, "dateTime": {"base": "xsd:dateTime"}, "boolean": {"base":"xsd:boolean"}},
+              "enums": {},
+              "slots": {},
+              "classes": {},
+              "examples": {}
+          }
+
+          def normalize_enum_name(name):
+              return re.sub(r'[^A-Za-z0-9]', '_', name).strip('_')
+
+          for sname, sdef in schemas.items():
+              # create class
+              class_slots = []
+              properties = sdef.get("properties", {}) or {}
+              required = set(sdef.get("required", []) or [])
+
+              for pname, pdef in properties.items():
+                  # slot name
+                  slot_name = pname
+                  class_slots.append(slot_name)
+                  # determine range
+                  if "$ref" in pdef:
+                      # reference to another schema
+                      ref = pdef["$ref"].split("/")[-1]
+                      slot_range = ref
+                  elif "enum" in pdef:
+                      # create an enum
+                      enum_name = normalize_enum_name(f"{sname}_{pname}_Enum")
+                      linkml["enums"][enum_name] = {"permissible_values": pdef["enum"]}
+                      slot_range = enum_name
+                  else:
+                      # map basic OAS types -> ranges
+                      t = pdef.get("type", "string")
+                      fmt = pdef.get("format")
+                      if t == "string" and fmt == "date-time":
+                          slot_range = "dateTime"
+                      elif t == "boolean":
+                          slot_range = "boolean"
+                      else:
+                          slot_range = "string"
+                  # create slot entry
+                  slot_entry = {"description": pdef.get("description", ""), "range": slot_range}
+                  if pname in required:
+                      slot_entry["required"] = True
+                  # arrays -> multivalued
+                  if pdef.get("type") == "array":
+                      slot_entry["multivalued"] = True
+                      items = pdef.get("items", {})
+                      if "$ref" in items:
+                          slot_entry["range"] = items["$ref"].split("/")[-1]
+                      elif "enum" in items:
+                          enum_name = normalize_enum_name(f"{sname}_{pname}_Enum")
+                          linkml["enums"][enum_name] = {"permissible_values": items["enum"]}
+                          slot_entry["range"] = enum_name
+                      else:
+                          slot_entry["range"] = items.get("type","string")
+                  # identifier heuristics: id, identifier, instructionId etc.
+                  if pname.lower() in ("id", "identifier", "instructionid", "productid", "declarationid"):
+                      slot_entry["identifier"] = True
+                  linkml["slots"][slot_name] = slot_entry
+
+              # class definition
+              class_entry = {"slots": class_slots}
+              # copy description if present
+              if "description" in sdef:
+                  class_entry["description"] = sdef["description"]
+              linkml["classes"][sname] = class_entry
+
+          out = pathlib.Path("docs/flexibility_products_from_oas.linkml.yaml")
+          out.write_text(yaml.safe_dump(linkml, sort_keys=False), encoding='utf-8')
+          print("Wrote", out)
+          PY
+
+      - name: Show generated LinkML
+        run: |
+          echo "---- LINKML (first 200 lines) ----"
+          sed -n '1,200p' docs/flexibility_products_from_oas.linkml.yaml || true
+
+      - name: Run linkml_to_puml.py to generate PUML
+        run: |
+          # ensure the script exists
+          if [ ! -f tools/linkml_to_puml.py ]; then
+            echo "tools/linkml_to_puml.py not found; aborting."
+            exit 0
+          fi
+          python tools/linkml_to_puml.py docs/flexibility_products_from_oas.linkml.yaml docs/diagrams/generated/flexibility_products_auto.puml
+          echo "Generated PUML files:"
+          ls -la docs/diagrams/generated || true
+
+      - name: Install Java + Graphviz for PlantUML rendering
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends openjdk-17-jre-headless graphviz curl unzip
+          sudo rm -rf /var/lib/apt/lists/*
+
+      - name: Download plantuml.jar
+        run: |
+          mkdir -p /opt/plantuml
+          curl -sL -o /opt/plantuml/plantuml.jar https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar
+          java -jar /opt/plantuml/plantuml.jar -version || true
+
+      - name: Render PUML -> SVG and PNG
+        run: |
+          find docs/diagrams -type f -name '*.puml' -print0 | while IFS= read -r -d '' f; do
+            echo "Rendering $f"
+            java -jar /opt/plantuml/plantuml.jar -tsvg "$f" || true
+            java -jar /opt/plantuml/plantuml.jar -tpng "$f" || true
+          done
+
+      - name: Commit generated LinkML and diagrams (if changed)
+        env:
+          GIT_AUTHOR_NAME: "github-actions[bot]"
+          GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
+        run: |
+          git config user.name "$GIT_AUTHOR_NAME"
+          git config user.email "$GIT_AUTHOR_EMAIL"
+          git add docs/flexibility_products_from_oas.linkml.yaml docs/diagrams || true
+          if ! git diff --cached --quiet; then
+            git commit -m "ci: OpenAPI → LinkML → PUML auto-update [skip ci]" || true
+            git push origin HEAD || true
+            echo "Committed generated artifacts"
+          else
+            echo "No changes to commit"
+          fi
