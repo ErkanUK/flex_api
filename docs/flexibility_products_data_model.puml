@@ -1,0 +1,93 @@
+@startuml
+title Flexibility Products — LinkML Data Model
+
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+' layout tuning
+left to right direction
+
+' ------------------------
+' Types (LinkML types)
+' ------------------------
+package "Types" as T #DDDDFF {
+  class xsd__string {
+    <<type>>
+    base: xsd:string
+  }
+  class dateTime {
+    <<type>>
+    base: xsd:dateTime
+  }
+}
+
+' ------------------------
+' Slots (LinkML slots)
+' ------------------------
+package "Slots" as S #FFEECC {
+  class service_id {
+    <<slot>>
+    range: string
+    identifier: true
+  }
+  class service_name {
+    <<slot>>
+    range: string
+  }
+  class items {
+    <<slot>>
+    range: Service
+    multivalued: true
+  }
+}
+
+' ------------------------
+' Classes (LinkML classes)
+' ------------------------
+package "Classes" as C #CCFFCC {
+  class Service {
+    + service_id : string  <<identifier>>
+    - service_name : string
+  }
+
+  class ServicesResponse {
+    - items : Service[]
+  }
+}
+
+' ------------------------
+' Relationships: slot -> class usage
+' ------------------------
+service_id ..> xsd__string : uses
+service_name ..> xsd__string : uses
+items ..> Service : references
+
+' Map which class uses which slot
+Service ..> service_id : has
+Service ..> service_name : has
+ServicesResponse ..> items : has
+
+' ------------------------
+' Example instance (example from LinkML examples)
+' ------------------------
+package "Examples" as E #FFF7CC {
+  object ex_service1 {
+    service_id = "svc-001"
+    service_name = "Example Service"
+  }
+  object ex_services_response {
+    items = [ ex_service1 ]
+  }
+}
+
+' draw arrows from classes to examples
+Service --> ex_service1 : exampleOf
+ServicesResponse --> ex_services_response : exampleOf
+
+note bottom
+  Notes:
+  - This diagram is generated from docs/flexibility_products.linkml.yaml
+  - Slots show basic metadata (identifier/multivalued)
+  - Types show LinkML type definitions (xsd mappings)
+end note
+
+@enduml

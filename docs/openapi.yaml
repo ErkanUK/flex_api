@@ -1,25 +1,377 @@
 openapi: 3.0.3
 info:
-  title: Flexibility Products API (minimal test)
+  title: GB DSO Flexibility Products API 
   version: "1.0.0"
+  description: |
+    Minimal OpenAPI 3.0 model for Aligned Flexibility Products based on
+    "ONSD 002 - Standard Flexibility Products (Dec 2024)". This surface
+    models the Common Product Parameters, the aligned product types
+    (e.g. Peak Reduction, Scheduled Utilisation, Operational Utilisation,
+    Scheduled Availability + Operational Utilisation, Variable Availability + Operational Utilisation)
+    and operations to register products, submit availability declarations,
+    and send utilisation instructions.
+servers:
+  - url: https://api.example-dso.uk/v1
+    description: Example DSO API server (replace per deployment)
+
 paths:
-  /services:
+  /products:
     get:
-      summary: List services
+      summary: List registered Flexibility Products
       responses:
         "200":
-          description: OK
+          description: Array of products
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                        name:
-                          type: string
+                type: array
+                items:
+                  $ref: '#/components/schemas/FlexibilityProduct'
+    post:
+      summary: Create/register a Flexibility Product (DSO or Market Fac.)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlexibilityProductCreate'
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlexibilityProduct'
+
+  /products/{productId}:
+    get:
+      summary: Get a Flexibility Product by id
+      parameters:
+        - $ref: '#/components/parameters/productId'
+      responses:
+        "200":
+          description: Flexibility product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlexibilityProduct'
+        "404":
+          description: Not found
+
+  /availability-declarations:
+    post:
+      summary: Submit an Availability Declaration (FSP -> DSO)
+      description: |
+        Modelled after the Availability Requirements in ONSD 002.
+        Some fields may be 'At Trade' (declared at procurement) or 'After Trade'
+        via pre-agreed process — the API accepts both.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvailabilityDeclaration'
+      responses:
+        "201":
+          description: Availability accepted or partially accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityResponse'
+
+  /utilisation-instructions:
+    post:
+      summary: Submit/receive a Utilisation Instruction (DSO -> FSP)
+      description: |
+        Represents a Utilisation Instruction (times, volumes, response time
+        expectations) as per Utilisation Requirements in ONSD 002.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UtilisationInstruction'
+      responses:
+        "200":
+          description: Instruction acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstructionAck'
+
+components:
+  parameters:
+    productId:
+      name: productId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Identifier for the Flexibility Product
+
+  schemas:
+
+    # Top-level product model
+    FlexibilityProduct:
+      type: object
+      required:
+        - id
+        - name
+        - serviceStructure
+      properties:
+        id:
+          type: string
+          example: peak-reduction-v1
+        name:
+          type: string
+          example: "Peak Reduction"
+        description:
+          type: string
+          example: "Utilisation-only product targeted at peak demand reduction."
+        serviceStructure:
+          type: string
+          enum:
+            - Utilisation Only
+            - Availability and Utilisation
+        priceSettingTimescales:
+          type: string
+          description: "When prices are determined (document lists 'At Trade' and 'Operational')."
+          example: At Trade
+        availabilityRequirements:
+          $ref: '#/components/schemas/AvailabilityRequirements'
+        utilisationRequirements:
+          $ref: '#/components/schemas/UtilisationRequirements'
+        notes:
+          type: string
+          description: "Free text note (DSO-specific 'end state' or 'interim' caveats)."
+
+    FlexibilityProductCreate:
+      allOf:
+        - $ref: '#/components/schemas/FlexibilityProduct'
+      required:
+        - id
+        - name
+        - serviceStructure
+
+    # Availability side
+    AvailabilityRequirements:
+      type: object
+      properties:
+        acceptanceTiming:
+          type: string
+          enum:
+            - At Trade
+            - After Trade
+          description: "When availability is accepted by the DSO"
+        availabilityChangesAllowed:
+          type: string
+          enum: ["Yes","No"]
+        availabilityPaymentUnit:
+          type: string
+          enum:
+            - "£/MW/h"
+            - "£/MWh"
+            - "£/h"
+          description: "Units used for availability payments (from document)"
+        availabilityPeriod:
+          type: string
+          enum:
+            - "Electricity Forward Agreement (EFA) blocks"
+            - "Settlement Periods"
+            - "Minutes"
+        availabilityRefinementTiming:
+          type: string
+          description: "Document gives examples (allowed / not allowed / week ahead etc.)."
+        availabilityRequestMechanism:
+          type: string
+          enum:
+            - "Request initiated by DSO"
+            - "Request initiated by FSP"
+        minimumAggregateUnitSize:
+          type: string
+          description: "Free text (document examples: 'e.g. 50kW, 1MW, N/A')."
+        partialAvailabilityAcceptancePossible:
+          type: string
+          enum: ["Yes","No"]
+        timeVariableAvailabilityVolumesAllowed:
+          type: string
+          enum: ["Yes","No"]
+
+    # Utilisation side
+    UtilisationRequirements:
+      type: object
+      properties:
+        deliveryExpectation:
+          type: string
+          enum:
+            - Continuous
+            - Peak Delivery
+        maximumResponseTime:
+          type: string
+          description: "Either minutes (e.g. '2 minutes', '15 minutes') or 'N/A'."
+        minimumUtilisationTime:
+          type: string
+          description: "Document examples: '60 minutes (Hour)', '30 minutes (Half Hour)'."
+        minimumUtilisationVolume:
+          type: string
+          description: "Free text; document uses 'End state: N/A / Interim: differs per DNO'."
+        partialUtilisationInstructionPossible:
+          type: string
+          enum: ["Yes","No"]
+        paymentsDuringResponseTime:
+          type: string
+          enum: ["Yes","No"]
+        timeVariableUtilisationVolumesAllowed:
+          type: string
+          enum: ["Yes","No"]
+        utilisationInstructionTimings:
+          type: array
+          items:
+            type: string
+            enum:
+              - At Trade
+              - Operational
+              - Real Time
+              - Day Ahead
+              - Week Ahead
+        utilisationPaymentUnit:
+          type: string
+          enum:
+            - "£/MWh"
+            - "£/MW/season"
+        utilisationPeriod:
+          type: string
+          enum:
+            - "Electricity Forward Agreement (EFA) blocks"
+            - "Settlement Periods"
+            - "Minutes"
+
+    # Availability declaration payload (FSP -> DSO)
+    AvailabilityDeclaration:
+      type: object
+      required:
+        - productId
+        - providerId
+        - availabilityWindowStart
+        - availabilityWindowEnd
+      properties:
+        productId:
+          type: string
+          description: "Flexibility product id"
+        providerId:
+          type: string
+          description: "Identifier for the FSP (market participant)"
+        availabilityWindowStart:
+          type: string
+          format: date-time
+        availabilityWindowEnd:
+          type: string
+          format: date-time
+        declaredVolume:
+          type: string
+          description: "Declared availability volume (units as agreed with DSO; doc typically uses kW/MW)."
+        timeVariableVolumes:
+          type: array
+          description: "Optional time series of volumes within the availability window."
+          items:
+            type: object
+            properties:
+              periodStart:
+                type: string
+                format: date-time
+              periodEnd:
+                type: string
+                format: date-time
+              volume:
+                type: string
+        metadata:
+          type: object
+          description: "Free-form metadata for interim/end-state flags (DSO-specific)."
+
+    AvailabilityResponse:
+      type: object
+      properties:
+        declarationId:
+          type: string
+        acceptedVolume:
+          type: string
+        partialAcceptance:
+          type: boolean
+        acceptanceTimestamp:
+          type: string
+          format: date-time
+        notes:
+          type: string
+
+    # Utilisation Instruction (DSO -> FSP)
+    UtilisationInstruction:
+      type: object
+      required:
+        - productId
+        - instructionId
+        - targetStart
+        - targetEnd
+        - instructionVolume
+      properties:
+        productId:
+          type: string
+        instructionId:
+          type: string
+        targetStart:
+          type: string
+          format: date-time
+        targetEnd:
+          type: string
+          format: date-time
+        instructionVolume:
+          type: string
+          description: "Volume to deliver (kW/MW as per product agreement)"
+        partialInstruction:
+          type: boolean
+        responseTimeRequirement:
+          type: string
+          description: "e.g. '2 minutes', '15 minutes', or 'N/A' per product"
+        deliveryExpectation:
+          type: string
+          enum:
+            - Continuous
+            - Peak Delivery
+        timeVariableVolumes:
+          type: array
+          items:
+            type: object
+            properties:
+              periodStart:
+                type: string
+                format: date-time
+              periodEnd:
+                type: string
+                format: date-time
+              volume:
+                type: string
+
+    InstructionAck:
+      type: object
+      properties:
+        instructionId:
+          type: string
+        providerId:
+          type: string
+        ackTimestamp:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+            - Accepted
+            - Rejected
+            - PartiallyAccepted
+        notes:
+          type: string
+
+  securitySchemes:
+    # Intentionally left minimal — see Missing Items for production guidance.
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key

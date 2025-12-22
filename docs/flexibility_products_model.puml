@@ -1,0 +1,14 @@
+@startuml
+title Flexibility Products — LinkML Model
+
+class Service {
+  +service_id : string
+  service_name : string
+}
+
+class ServicesResponse {
+  items : Service[]
+}
+
+ServicesResponse "1" --> "0..*" Service : items
+@enduml
