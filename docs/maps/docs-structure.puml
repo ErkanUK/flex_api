@@ -1,0 +1,21 @@
+@startuml
+title Documentation Structure Map
+
+package "docs/" {
+  package "diagrams/" {
+    [test.puml]
+    [README.md]
+  }
+
+  package "maps/" {
+    [docs-structure.puml]
+  }
+
+  package "api/" {
+    [openapi.yaml]
+  }
+
+  [index.md]
+}
+
+@enduml
