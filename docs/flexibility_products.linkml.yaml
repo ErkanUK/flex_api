@@ -1,0 +1,68 @@
+id: http://example.org/flexibility-products
+name: flexibility_products
+version: "1.0.0"
+license: CC0-1.0
+
+prefixes:
+  ex: http://example.org/
+  xsd: http://www.w3.org/2001/XMLSchema#
+
+default_prefix: ex
+default_range: string
+
+imports: []
+
+########################
+# Types
+########################
+types:
+  string:
+    base: xsd:string
+
+########################
+# Slots
+########################
+slots:
+  service_id:
+    description: Unique identifier for a service.
+    identifier: true
+    range: string
+
+  service_name:
+    description: Human-readable name of the service.
+    range: string
+
+  items:
+    description: List of services returned by the API.
+    multivalued: true
+    range: Service
+
+########################
+# Classes
+########################
+classes:
+  Service:
+    description: Represents a single service returned by the Flexibility Products API.
+    slots:
+      - service_id
+      - service_name
+
+  ServicesResponse:
+    description: Response wrapper for the GET /services endpoint.
+    slots:
+      - items
+
+########################
+# Examples
+########################
+examples:
+  example_service:
+    id: ex:svc1
+    service_id: "svc-001"
+    service_name: "Example Service"
+
+  example_services_response:
+    id: ex:response1
+    items:
+      - service_id: "svc-001"
+        service_name: "Example Service"
