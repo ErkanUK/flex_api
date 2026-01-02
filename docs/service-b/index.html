@@ -4,19 +4,121 @@
   <meta charset="utf-8"/>
   <title>Service B Flex API - Swagger UI</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Theme CSS -->
+  <style>
+    body.theme-dark {
+      background: #071023;
+      color: #e6eef8;
+    }
+    body.theme-light {
+      background: #f8fafc;
+      color: #0f1724;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 9999;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      background: #06b6d4;
+      color: #022;
+      box-shadow: 0 6px 18px rgba(6,182,212,0.2);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    body.theme-light .theme-toggle { background: #06b6d4; color: #022; }
+    body.theme-dark  .theme-toggle { background: #60a5fa; color: #022; }
+
+    /* Pragmatic dark-mode treatment for Swagger UI */
+    body.theme-dark .swagger-ui {
+      filter: invert(1) hue-rotate(180deg);
+    }
+    body.theme-dark .swagger-ui img {
+      filter: invert(1) hue-rotate(180deg);
+    }
+
+    html,body { height: 100%; margin: 0; padding: 0; }
+    #swagger-ui { min-height: 100vh; }
+  </style>
+
+  <!-- Swagger UI CSS -->
   <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@4/swagger-ui.css"/>
+
+  <!-- Apply theme early -->
+  <script>
+    (function () {
+      function getPreferredTheme() {
+        var t = localStorage.getItem('flexapi:theme');
+        if (t === 'light' || t === 'dark') return t;
+        return (window.matchMedia && window.matchMedia('(prefers-color-scheme:light)').matches) ? 'light' : 'dark';
+      }
+      var theme = getPreferredTheme();
+      document.addEventListener('DOMContentLoaded', function() {
+        document.body.classList.remove('theme-light','theme-dark');
+        document.body.classList.add(theme === 'light' ? 'theme-light' : 'theme-dark');
+      });
+      if (document.body) {
+        document.body.classList.remove('theme-light','theme-dark');
+        document.body.classList.add(theme === 'light' ? 'theme-light' : 'theme-dark');
+      }
+      window.__flexapiTheme = {
+        get: function(){ return theme; },
+        set: function(newTheme){
+          theme = newTheme;
+          localStorage.setItem('flexapi:theme', newTheme);
+          if (document.body) {
+            document.body.classList.remove('theme-light','theme-dark');
+            document.body.classList.add(newTheme === 'light' ? 'theme-light' : 'theme-dark');
+          }
+        }
+      };
+    })();
+  </script>
 </head>
 <body>
+  <!-- Toggle button -->
+  <button id="themeBtn" class="theme-toggle" aria-pressed="false">Toggle theme</button>
+
+  <!-- Swagger UI mount -->
   <div id="swagger-ui"></div>
+
+  <!-- Swagger UI bundle -->
   <script src="https://unpkg.com/swagger-ui-dist@4/swagger-ui-bundle.js"></script>
+
+  <!-- Wire up toggle and initialize Swagger UI -->
   <script>
-    window.onload = () => {
+    // theme toggle wiring
+    (function () {
+      var btn = document.getElementById('themeBtn');
+      function refreshButton() {
+        var current = (window.__flexapiTheme && window.__flexapiTheme.get()) || 'dark';
+        btn.textContent = (current === 'light') ? 'Switch to dark' : 'Switch to light';
+        btn.setAttribute('aria-pressed', current === 'dark' ? 'true' : 'false');
+      }
+      btn.addEventListener('click', function () {
+        var cur = (window.__flexapiTheme && window.__flexapiTheme.get()) || 'dark';
+        var next = cur === 'light' ? 'dark' : 'light';
+        if (window.__flexapiTheme && window.__flexapiTheme.set) window.__flexapiTheme.set(next);
+        refreshButton();
+      });
+      refreshButton();
+    })();
+
+    // Initialize Swagger UI after theme applied
+    window.onload = function () {
       SwaggerUIBundle({
         url: "./openapi.json",
         dom_id: '#swagger-ui',
         deepLinking: true,
         docExpansion: 'none',
-        presets: [SwaggerUIBundle.presets.apis]
+        presets: [SwaggerUIBundle.presets.apis],
+        layout: "BaseLayout"
       });
     };
   </script>
