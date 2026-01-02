@@ -1,37 +1,312 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <title>Flexibility Products API – Swagger UI</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Flex API — Services</title>
+  <meta name="description" content="API docs portal for the Flex API: live OpenAPI specs for Service A and Service B." />
 
-  <!-- Swagger UI CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/swagger-ui-dist@4/swagger-ui.css"
-  />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
   <style>
-    body { margin: 0; }
-    #swagger-ui { height: 100vh; }
+    :root{
+      --bg-dark:#071023; --bg-light:#f8fafc;
+      --card-dark:#071526; --card-light:#ffffff;
+      --muted-dark:#94a3b8; --muted-light:#475569;
+      --accent:#06b6d4; --glass: rgba(255,255,255,0.03);
+      --success:#10b981; --danger:#ef4444;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; padding:28px; display:flex;align-items:flex-start;justify-content:center;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+      transition: background-color .25s ease, color .25s ease;
+    }
+    body.theme-dark{
+      background: linear-gradient(180deg, rgba(6,182,212,0.04), rgba(2,6,23,0.02)), var(--bg-dark);
+      color:#e6eef8;
+    }
+    body.theme-light{
+      background: linear-gradient(180deg, rgba(6,182,212,0.02), rgba(2,6,23,0.01)), var(--bg-light);
+      color:#0f1724;
+    }
+
+    .container{width:100%;max-width:1100px}
+    header{display:flex;gap:14px;align-items:center;margin-bottom:22px}
+    .logo{
+      width:64px;height:64px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+      box-shadow:0 8px 20px rgba(2,6,23,0.12);flex:0 0 64px;
+    }
+    /* Logo colors change with theme via CSS variables set on body */
+    body.theme-dark .logo{background:linear-gradient(135deg,var(--accent),#60a5fa)}
+    body.theme-light .logo{background:linear-gradient(135deg,#60a5fa, #06b6d4)}
+
+    h1{margin:0;font-size:1.5rem}
+    p.lead{margin:6px 0 0;color:var(--muted-dark)}
+    body.theme-light p.lead{color:var(--muted-light)}
+
+    .controls{display:flex;gap:8px;margin-left:auto;align-items:center}
+    .btn{
+      background:transparent;border:1px solid rgba(0,0,0,0.07);color:inherit;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:600;cursor:pointer
+    }
+    .btn.primary{background:var(--accent);color:#022;border:none;box-shadow:0 10px 20px rgba(6,182,212,0.08)}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:18px}
+    @media (max-width:820px){.grid{grid-template-columns:1fr}}
+
+    .card{
+      padding:18px;border-radius:12px;border:1px solid rgba(0,0,0,0.04);
+      transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+      background: var(--card-dark);
+    }
+    body.theme-light .card{ background: var(--card-light); border-color: rgba(2,6,23,0.04); }
+    .card:hover{ transform: translateY(-6px); box-shadow: 0 20px 40px rgba(2,6,23,0.08); }
+    .card h3{margin:0 0 6px;font-size:1.05rem}
+    .meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .badge{font-size:0.78rem;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,0.03);color:var(--muted-dark);border:1px solid rgba(255,255,255,0.02)}
+    body.theme-light .badge{background:#f1f5f9;color:var(--muted-light);border:1px solid rgba(2,6,23,0.03)}
+    .version{background:rgba(0,0,0,0.12);color:var(--accent);font-weight:700}
+    .desc{margin:10px 0;color:var(--muted-dark);min-height:48px}
+    body.theme-light .desc{color:var(--muted-light)}
+    .row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+    .links{display:flex;gap:8px;align-items:center}
+    .linkbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;background:#021826;color:var(--accent);text-decoration:none;font-weight:600;border:1px solid rgba(6,182,212,0.06)}
+    .status{font-weight:700;padding:6px 10px;border-radius:999px}
+    .status.ok{background:rgba(16,185,129,0.12);color:var(--success)}
+    .status.err{background:rgba(239,68,68,0.08);color:var(--danger)}
+    footer{margin-top:22px;color:var(--muted-dark);font-size:0.9rem;display:flex;justify-content:space-between;flex-wrap:wrap}
+    .small{font-size:0.85rem;color:var(--muted-dark)}
+    .spinner{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,0.06);border-top-color:var(--accent);animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .toolbar{display:flex;gap:8px;align-items:center;margin-top:10px}
+    input[type="search"]{padding:10px 12px;border-radius:10px;border:1px solid rgba(0,0,0,0.06);min-width:260px}
+    body.theme-light input[type="search"]{border:1px solid rgba(2,6,23,0.06)}
+    .theme-toggle{padding:8px;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,0.04);background:transparent}
   </style>
 </head>
-
 <body>
-  <div id="swagger-ui"></div>
+  <div class="container">
+    <header>
+      <div class="logo" aria-hidden="true">
+        <!-- Inline SVG logo (no extra files) -->
+        <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect x="0" y="0" width="44" height="44" rx="10" fill="url(#g)"/>
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#06b6d4"/>
+              <stop offset="1" stop-color="#60a5fa"/>
+            </linearGradient>
+          </defs>
+          <g transform="translate(6,6)">
+            <path d="M7 0a7 7 0 1 0 0 14V0z" fill="white" fill-opacity="0.95"></path>
+            <circle cx="12" cy="6" r="3" fill="white" fill-opacity="0.9"></circle>
+          </g>
+        </svg>
+      </div>
 
-  <!-- Swagger UI JS -->
-  <script src="https://unpkg.com/swagger-ui-dist@4/swagger-ui-bundle.js"></script>
+      <div>
+        <h1>Flex API — Service catalogue</h1>
+        <p class="lead">Live OpenAPI specs. Click a card to view the interactive docs or download the raw spec.</p>
+
+        <div class="toolbar" style="margin-top:8px">
+          <input id="searchBox" type="search" placeholder="Search services, titles, descriptions..." aria-label="Search services">
+          <button id="clearSearch" class="btn" title="Clear search">Clear</button>
+        </div>
+      </div>
+
+      <div class="controls" aria-hidden="false">
+        <button id="refreshBtn" class="btn" title="Refresh service metadata">Refresh</button>
+        <button id="themeBtn" class="btn theme-toggle" title="Toggle theme">Toggle theme</button>
+        <a class="btn primary" href="./service-a/" id="openFirst">Open Service A</a>
+      </div>
+    </header>
+
+    <main>
+      <div id="grid" class="grid" aria-live="polite"></div>
+
+      <footer>
+        <div class="small">Hosted on GitHub Pages • <strong>flex_api</strong></div>
+        <div><a class="small" href="https://github.com/erkanuk/flex_api" target="_blank" rel="noopener">View repo on GitHub</a></div>
+      </footer>
+    </main>
+  </div>
+
   <script>
-    window.onload = () => {
-      SwaggerUIBundle({
-        url: "openapi.yaml",
-        dom_id: "#swagger-ui",
-        layout: "BaseLayout",
-        docExpansion: "none",
-        defaultModelsExpandDepth: -1
-      });
-    };
+  (function () {
+    // Primary config - the page will try to load services-index.json in docs/
+    const INDEX_PATH = './services-index.json';
+
+    // Built-in fallback services (used if services-index.json is not present)
+    const FALLBACK_SERVICES = [
+      { id: "service-a", label: "Service A", path: "./service-a/openapi.json" },
+      { id: "service-b", label: "Service B", path: "./service-b/openapi.json" }
+    ];
+
+    const grid = document.getElementById('grid');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const openFirst = document.getElementById('openFirst');
+    const themeBtn = document.getElementById('themeBtn');
+    const searchBox = document.getElementById('searchBox');
+    const clearSearch = document.getElementById('clearSearch');
+
+    // theme management
+    function getTheme() {
+      return localStorage.getItem('flexapi:theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme:light)').matches ? 'light' : 'dark');
+    }
+    function applyTheme(t) {
+      document.body.classList.remove('theme-light','theme-dark');
+      document.body.classList.add(t === 'light' ? 'theme-light' : 'theme-dark');
+      localStorage.setItem('flexapi:theme', t);
+    }
+    themeBtn.addEventListener('click', () => {
+      const next = getTheme() === 'light' ? 'dark' : 'light';
+      applyTheme(next);
+    });
+    // initialise theme
+    applyTheme(getTheme());
+
+    // Basic HTML-escaping
+    function escapeHtml(s){ return String(s || '').replace(/[&<>"']/g, function(ch){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]); }); }
+
+    function showPlaceholder(svc) {
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.id = `card-${svc.id}`;
+      el.innerHTML = `
+        <div class="meta"><span class="badge">${escapeHtml(svc.label)}</span><span class="badge">Loading…</span></div>
+        <h3>Loading…</h3>
+        <p class="desc"><span class="spinner"></span> Fetching <code>${escapeHtml(svc.path)}</code></p>
+        <div class="row"><div class="links"></div><div class="small"></div></div>
+      `;
+      return el;
+    }
+
+    function renderCard(svc, meta, status) {
+      let el = document.getElementById(`card-${svc.id}`);
+      if (!el) { el = document.createElement('div'); el.className='card'; el.id = `card-${svc.id}`; }
+      const title = meta?.info?.title || svc.label;
+      const version = meta?.info?.version || 'n/a';
+      const description = (meta?.info?.description || meta?.info?.summary || '').replace(/\n+/g, ' ').trim();
+      const short = description.length > 220 ? description.slice(0,217) + '…' : (description || 'No description available');
+      const rawUrl = svc.path;
+      const uiUrl = `./${svc.id}/`;
+      el.innerHTML = `
+        <div class="meta">
+          <span class="badge">${escapeHtml(svc.label)}</span>
+          <span class="badge version">v${escapeHtml(version)}</span>
+          <span class="badge">${escapeHtml(meta?.openapi || meta?.swagger || 'spec')}</span>
+        </div>
+        <h3>${escapeHtml(title)}</h3>
+        <p class="desc">${escapeHtml(short)}</p>
+        <div class="row">
+          <div class="links">
+            <a class="linkbtn" href="${uiUrl}" target="_blank" rel="noopener">Open docs</a>
+            <a class="btn" href="${rawUrl}" target="_blank" rel="noopener">Download spec</a>
+          </div>
+          <div class="small">
+            <span class="status ${status.ok ? 'ok' : 'err'}">${status.ok ? 'OK' : 'ERROR'}</span>
+          </div>
+        </div>
+      `;
+      return el;
+    }
+
+    function renderErrorCard(svc, err) {
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.id = `card-${svc.id}`;
+      el.innerHTML = `
+        <div class="meta"><span class="badge">${escapeHtml(svc.label)}</span><span class="badge">Unavailable</span></div>
+        <h3>${escapeHtml(svc.label)} (spec load error)</h3>
+        <p class="desc">${escapeHtml(err.message || String(err))}</p>
+        <div class="row">
+          <div class="links"><a class="btn" href="${svc.path}" target="_blank" rel="noopener">Open raw spec</a></div>
+          <div class="small"><span class="status err">ERROR</span></div>
+        </div>`;
+      return el;
+    }
+
+    // caching in session
+    function cacheGet(k){ try { return JSON.parse(sessionStorage.getItem(k)); } catch(e){return null} }
+    function cacheSet(k,v){ try { sessionStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+
+    async function fetchJSON(url) {
+      const res = await fetch(url, {cache:'no-store'});
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+      return res.json();
+    }
+
+    // Attempt to load services-index.json; if absent, return fallback
+    async function loadIndex() {
+      try {
+        const idx = await fetchJSON(INDEX_PATH);
+        if (Array.isArray(idx.services)) return idx.services;
+        // if index file exists but malformed, fallback
+        console.warn('services-index.json present but malformed; using fallback');
+        return FALLBACK_SERVICES;
+      } catch (err) {
+        // not found or network error -> fallback
+        return FALLBACK_SERVICES;
+      }
+    }
+
+    // load metadata for each service and render
+    async function loadAll() {
+      grid.innerHTML = '';
+      const services = await loadIndex();
+      // create placeholders
+      for (const svc of services) grid.appendChild(showPlaceholder(svc));
+
+      // sequential fetch (keeps network sane and aids error visibility)
+      for (const svc of services) {
+        try {
+          const cacheKey = `openapi_meta:${svc.path}`;
+          const cached = cacheGet(cacheKey);
+          if (cached && (Date.now() - (cached._ts || 0) < 5*60*1000)) {
+            const el = renderCard(svc, cached.meta, {ok:true});
+            grid.replaceChild(el, document.getElementById(`card-${svc.id}`));
+            continue;
+          }
+          const meta = await fetchJSON(svc.path);
+          cacheSet(cacheKey, { _ts: Date.now(), meta });
+          const el = renderCard(svc, meta, {ok:true});
+          grid.replaceChild(el, document.getElementById(`card-${svc.id}`));
+        } catch (err) {
+          const el = renderErrorCard(svc, err);
+          grid.replaceChild(el, document.getElementById(`card-${svc.id}`));
+        }
+      }
+      applyFilter(); // apply any current search filter to new DOM
+    }
+
+    // search/filter
+    function applyFilter() {
+      const q = (searchBox.value || '').trim().toLowerCase();
+      const cards = Array.from(grid.children);
+      if (!q) { cards.forEach(c => c.style.display=''); return; }
+      for (const c of cards) {
+        const txt = (c.innerText || '').toLowerCase();
+        c.style.display = txt.indexOf(q) !== -1 ? '' : 'none';
+      }
+    }
+
+    // wire up controls
+    refreshBtn.addEventListener('click', async () => {
+      // clear cache for index and services
+      sessionStorage.clear();
+      await loadAll();
+    });
+
+    searchBox.addEventListener('input', () => applyFilter());
+    clearSearch.addEventListener('click', () => { searchBox.value=''; applyFilter(); searchBox.focus(); });
+
+    // boot
+    loadAll();
+
+    // openFirst points to service-a by default (existing anchor behaviour)
+  })();
   </script>
 </body>
 </html>
