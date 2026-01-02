@@ -1,0 +1,138 @@
+name: Deploy multi-service Swagger UI to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  prepare-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages (actions)
+        uses: actions/configure-pages@v5
+
+      - name: Ensure docs/service-a and docs/service-b exist
+        run: |
+          mkdir -p docs/service-a docs/service-b
+
+      - name: Copy OpenAPI files if present at repo root
+        run: |
+          # Copy service A spec (if present at repo root as openapi-service-a.json)
+          if [ -f "./openapi-service-a.json" ]; then
+            cp ./openapi-service-a.json ./docs/service-a/openapi.json
+            echo "Copied openapi-service-a.json -> docs/service-a/openapi.json"
+          else
+            echo "openapi-service-a.json not found at repo root; if docs/service-a/openapi.json exists it will be used."
+          fi
+          # Copy service B spec (if present at repo root as openapi-service-b.json)
+          if [ -f "./openapi-service-b.json" ]; then
+            cp ./openapi-service-b.json ./docs/service-b/openapi.json
+            echo "Copied openapi-service-b.json -> docs/service-b/openapi.json"
+          else
+            echo "openapi-service-b.json not found at repo root; if docs/service-b/openapi.json exists it will be used."
+          fi
+
+      - name: Ensure index.html present for service-a
+        run: |
+          if [ ! -f docs/service-a/index.html ]; then
+            cat > docs/service-a/index.html <<'HTML'
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Service A API - Swagger UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@4/swagger-ui.css"/>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@4/swagger-ui-bundle.js"></script>
+  <script>
+    window.onload = () => {
+      SwaggerUIBundle({
+        url: "./openapi.json",
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        docExpansion: 'none',
+        presets: [SwaggerUIBundle.presets.apis]
+      });
+    };
+  </script>
+</body>
+</html>
+HTML
+          fi
+
+      - name: Ensure index.html present for service-b
+        run: |
+          if [ ! -f docs/service-b/index.html ]; then
+            cat > docs/service-b/index.html <<'HTML'
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Service B API - Swagger UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@4/swagger-ui.css"/>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@4/swagger-ui-bundle.js"></script>
+  <script>
+    window.onload = () => {
+      SwaggerUIBundle({
+        url: "./openapi.json",
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        docExpansion: 'none',
+        presets: [SwaggerUIBundle.presets.apis]
+      });
+    };
+  </script>
+</body>
+</html>
+HTML
+          fi
+
+      - name: Ensure optional root index.html (landing)
+        run: |
+          if [ ! -f docs/index.html ]; then
+            cat > docs/index.html <<'HTML'
+<!doctype html>
+<html>
+<head><meta charset="utf-8"/><title>API docs</title></head>
+<body style="font-family:system-ui,Segoe UI,Roboto,Arial">
+  <h1>API documentation</h1>
+  <ul>
+    <li><a href="./service-a/">Service A docs</a></li>
+    <li><a href="./service-b/">Service B docs</a></li>
+  </ul>
+</body>
+</html>
+HTML
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'docs'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

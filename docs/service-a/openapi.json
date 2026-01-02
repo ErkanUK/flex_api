@@ -1,0 +1,446 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Service A - Flexibility Products API",
+    "version": "1.0.0",
+    "description": "OpenAPI generated from your LinkML-like YAML. Provides minimal endpoints to list/create products and submit availability/utilisation payloads."
+  },
+  "servers": [
+    {
+      "url": "https://api.example.org/v1",
+      "description": "example server"
+    }
+  ],
+  "paths": {
+    "/products": {
+      "get": {
+        "summary": "List Flexibility Products",
+        "responses": {
+          "200": {
+            "description": "Array of products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FlexibilityProduct"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a Flexibility Product",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlexibilityProductCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlexibilityProduct"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/availability-declarations": {
+      "post": {
+        "summary": "Submit an Availability Declaration",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvailabilityDeclaration"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Availability accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailabilityResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilisation-instructions": {
+      "post": {
+        "summary": "Submit a Utilisation Instruction",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UtilisationInstruction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Instruction acknowledged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructionAck"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FlexibilityProduct": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "serviceStructure"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "http://example.org/peak-reduction-v1",
+            "description": "Identifier for the Flexibility Product"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "serviceStructure": {
+            "type": "string",
+            "enum": [
+              "Utilisation Only",
+              "Availability and Utilisation"
+            ]
+          },
+          "priceSettingTimescales": {
+            "type": "string",
+            "example": "At Trade"
+          },
+          "availabilityRequirements": {
+            "$ref": "#/components/schemas/AvailabilityRequirements"
+          },
+          "utilisationRequirements": {
+            "$ref": "#/components/schemas/UtilisationRequirements"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "FlexibilityProductCreate": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FlexibilityProduct"
+          }
+        ]
+      },
+      "AvailabilityRequirements": {
+        "type": "object",
+        "properties": {
+          "acceptanceTiming": {
+            "type": "string",
+            "enum": [
+              "At Trade",
+              "After Trade"
+            ]
+          },
+          "availabilityChangesAllowed": {
+            "type": "string",
+            "enum": [
+              "Yes",
+              "No"
+            ]
+          },
+          "availabilityPaymentUnit": {
+            "type": "string",
+            "enum": [
+              "£/MW/h",
+              "£/MWh",
+              "£/h"
+            ]
+          },
+          "availabilityPeriod": {
+            "type": "string",
+            "enum": [
+              "Electricity Forward Agreement (EFA) blocks",
+              "Settlement Periods",
+              "Minutes"
+            ]
+          },
+          "availabilityRefinementTiming": {
+            "type": "string"
+          },
+          "availabilityRequestMechanism": {
+            "type": "string"
+          },
+          "minimumAggregateUnitSize": {
+            "type": "string"
+          },
+          "partialAvailabilityAcceptancePossible": {
+            "type": "string",
+            "enum": [
+              "Yes",
+              "No"
+            ]
+          },
+          "timeVariableAvailabilityVolumesAllowed": {
+            "type": "string",
+            "enum": [
+              "Yes",
+              "No"
+            ]
+          }
+        }
+      },
+      "UtilisationRequirements": {
+        "type": "object",
+        "properties": {
+          "deliveryExpectation": {
+            "type": "string",
+            "enum": [
+              "Continuous",
+              "Peak Delivery"
+            ]
+          },
+          "maximumResponseTime": {
+            "type": "string",
+            "description": "e.g. '2 minutes', '15 minutes', or 'N/A'"
+          },
+          "minimumUtilisationTime": {
+            "type": "string",
+            "description": "e.g. '30 minutes (Half Hour)'"
+          },
+          "minimumUtilisationVolume": {
+            "type": "string"
+          },
+          "partialUtilisationInstructionPossible": {
+            "type": "string",
+            "enum": [
+              "Yes",
+              "No"
+            ]
+          },
+          "paymentsDuringResponseTime": {
+            "type": "string",
+            "enum": [
+              "Yes",
+              "No"
+            ]
+          },
+          "timeVariableUtilisationVolumesAllowed": {
+            "type": "string",
+            "enum": [
+              "Yes",
+              "No"
+            ]
+          },
+          "utilisationInstructionTimings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "At Trade",
+                "Operational",
+                "Real Time",
+                "Day Ahead",
+                "Week Ahead"
+              ]
+            }
+          },
+          "utilisationPaymentUnit": {
+            "type": "string",
+            "enum": [
+              "£/MWh",
+              "£/MW/season"
+            ]
+          },
+          "utilisationPeriod": {
+            "type": "string",
+            "enum": [
+              "Electricity Forward Agreement (EFA) blocks",
+              "Settlement Periods",
+              "Minutes"
+            ]
+          }
+        }
+      },
+      "AvailabilityDeclaration": {
+        "type": "object",
+        "required": [
+          "productId",
+          "providerId",
+          "availabilityWindowStart",
+          "availabilityWindowEnd"
+        ],
+        "properties": {
+          "productId": {
+            "type": "string",
+            "description": "Flexibility product id (references FlexibilityProduct.id)"
+          },
+          "providerId": {
+            "type": "string"
+          },
+          "availabilityWindowStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "availabilityWindowEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "declaredVolume": {
+            "type": "string"
+          },
+          "timeVariableVolumes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeVariableVolume"
+            }
+          },
+          "metadata": {
+            "type": "string"
+          }
+        }
+      },
+      "AvailabilityResponse": {
+        "type": "object",
+        "properties": {
+          "declarationId": {
+            "type": "string"
+          },
+          "acceptedVolume": {
+            "type": "string"
+          },
+          "partialAcceptance": {
+            "type": "boolean"
+          },
+          "acceptanceTimestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "response_notes": {
+            "type": "string"
+          }
+        }
+      },
+      "TimeVariableVolume": {
+        "type": "object",
+        "properties": {
+          "periodStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "volume": {
+            "type": "string"
+          }
+        }
+      },
+      "UtilisationInstruction": {
+        "type": "object",
+        "required": [
+          "productId",
+          "instructionId",
+          "targetStart",
+          "targetEnd",
+          "instructionVolume"
+        ],
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "instructionId": {
+            "type": "string"
+          },
+          "targetStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "targetEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "instructionVolume": {
+            "type": "string"
+          },
+          "partialInstruction": {
+            "type": "boolean"
+          },
+          "responseTimeRequirement": {
+            "type": "string"
+          },
+          "deliveryExpectation": {
+            "type": "string",
+            "enum": [
+              "Continuous",
+              "Peak Delivery"
+            ]
+          },
+          "timeVariableVolumesForInstruction": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeVariableVolume"
+            }
+          }
+        }
+      },
+      "InstructionAck": {
+        "type": "object",
+        "properties": {
+          "ack_instructionId": {
+            "type": "string"
+          },
+          "ack_providerId": {
+            "type": "string"
+          },
+          "ackTimestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Accepted",
+              "Rejected",
+              "PartiallyAccepted"
+            ]
+          },
+          "ack_notes": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

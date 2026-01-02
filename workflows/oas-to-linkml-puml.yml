@@ -1,189 +1,133 @@
-name: OpenAPI → LinkML → PUML → Diagrams
+#!/usr/bin/env python3
+"""
+Robust linkml_to_puml.py
 
-on:
-  push:
-    branches: ["main"]
-    paths:
-      - 'openapi.yaml'
-      - 'docs/**/*.linkml.yaml'
-      - 'tools/linkml_to_puml.py'
-      - '.github/workflows/oas-to-linkml-puml.yml'
-  workflow_dispatch:
+- Always emits a PUML class for every LinkML `classes` entry.
+- Emits attributes for each slot, shows identifier/multivalued markers.
+- Emits relationships when a slot.range is another class.
+- Writes one combined PUML file.
 
+Usage:
+  python tools/linkml_to_puml.py <input.linkml.yaml> <output_puml>
+"""
+import sys
+from pathlib import Path
+import yaml
 
-permissions:
-  contents: write
+def safe_load(path: Path):
+    with path.open("r", encoding="utf-8") as fh:
+        return yaml.safe_load(fh)
 
-jobs:
-  oas-to-diagrams:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: true
+def normalize_name(n: str) -> str:
+    return str(n).replace(" ", "_").replace("-", "_")
 
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+def attribute_line(sname: str, sdef: dict) -> str:
+    """Return a single attribute line for a class box."""
+    r = sdef.get("range", "string")
+    mult = sdef.get("multivalued", False)
+    ident = sdef.get("identifier", False)
+    prefix = "+" if ident else "-"
+    suffix = "[]" if mult else ""
+    desc = sdef.get("description", "")
+    # Keep description short and safe (escape newlines)
+    desc_short = str(desc).replace("\n", " ").strip()
+    if desc_short:
+        return f"  {prefix} {sname} : {r}{suffix}  // {desc_short[:120]}"
+    else:
+        return f"  {prefix} {sname} : {r}{suffix}"
 
-      - name: Install PyYAML
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install pyyaml
+def class_to_puml(name: str, cdef: dict, slots: dict) -> str:
+    lines = []
+    lines.append(f"class {name} {{")
+    for sname in (cdef.get("slots") or []):
+        sdef = slots.get(sname, {}) or {}
+        lines.append(attribute_line(sname, sdef))
+    lines.append("}")
+    return "\n".join(lines)
 
-      - name: Ensure output directories
-        run: |
-          mkdir -p docs/diagrams/generated
-          mkdir -p docs
+def generate_puml_from_linkml(linkml: dict, out_puml: Path):
+    classes = linkml.get("classes", {}) or {}
+    slots = linkml.get("slots", {}) or {}
+    enums = linkml.get("enums", {}) or {}
 
-      - name: Convert OpenAPI (components/schemas) → LinkML
-        run: |
-          python - <<'PY'
-          # Minimal, conservative OpenAPI -> LinkML converter.
-          # Maps components/schemas -> LinkML classes and slots. Does not invent semantics.
-          import sys, yaml, re, pathlib
-          src = pathlib.Path("openapi.yaml")
-          if not src.exists():
-              # try docs/openapi.yaml fallback
-              src = pathlib.Path("docs/openapi.yaml")
-          if not src.exists():
-              print("No OpenAPI file found (openapi.yaml or docs/openapi.yaml). Exiting.")
-              sys.exit(0)
+    lines = ["@startuml", f"title Auto-generated diagram from {out_puml.name}", "skinparam classAttributeIconSize 0", ""]
 
-          spec = yaml.safe_load(src.read_text(encoding='utf-8'))
-          components = spec.get("components", {}) or {}
-          schemas = components.get("schemas", {}) or {}
+    # Emit enums as a small package (optional)
+    if enums:
+        lines.append('package "Enums" {')
+        for ename, edef in enums.items():
+            vals = edef.get("permissible_values", []) or []
+            lines.append(f'class {ename} <<enumeration>> {{')
+            for v in vals[:40]:
+                # safe representation of enum values
+                lines.append(f'  {v}')
+            lines.append("}")
+        lines.append("}")
+        lines.append("")
 
-          linkml = {
-              "id": "http://example.org/flexibility-products-from-oas",
-              "name": "flexibility_products_from_oas",
-              "version": spec.get("info", {}).get("version", "0.0.0"),
-              "prefixes": {"ex": "http://example.org/", "xsd":"http://www.w3.org/2001/XMLSchema#"},
-              "default_prefix": "ex",
-              "types": {"string": {"base": "xsd:string"}, "dateTime": {"base": "xsd:dateTime"}, "boolean": {"base":"xsd:boolean"}},
-              "enums": {},
-              "slots": {},
-              "classes": {},
-              "examples": {}
-          }
+    # Emit every class, even empty
+    for cname, cdef in classes.items():
+        lines.append(class_to_puml(cname, cdef or {}, slots))
+        lines.append("")
 
-          def normalize_enum_name(name):
-              return re.sub(r'[^A-Za-z0-9]', '_', name).strip('_')
+    # Emit relationships for slots whose range is another class
+    rels = []
+    for sname, sdef in slots.items():
+        rng = sdef.get("range")
+        if isinstance(rng, str) and rng in classes:
+            # find classes that own this slot
+            for cname, cdef in classes.items():
+                if sname in (cdef.get("slots") or []):
+                    mult = sdef.get("multivalued", False)
+                    multiplicity = '"0..*"' if mult else '"1"'
+                    rels.append(f'{cname} --> {rng} : {sname}')
+    if rels:
+        lines.append("\n".join(rels))
+        lines.append("")
 
-          for sname, sdef in schemas.items():
-              # create class
-              class_slots = []
-              properties = sdef.get("properties", {}) or {}
-              required = set(sdef.get("required", []) or [])
+    lines.append("@enduml")
 
-              for pname, pdef in properties.items():
-                  # slot name
-                  slot_name = pname
-                  class_slots.append(slot_name)
-                  # determine range
-                  if "$ref" in pdef:
-                      # reference to another schema
-                      ref = pdef["$ref"].split("/")[-1]
-                      slot_range = ref
-                  elif "enum" in pdef:
-                      # create an enum
-                      enum_name = normalize_enum_name(f"{sname}_{pname}_Enum")
-                      linkml["enums"][enum_name] = {"permissible_values": pdef["enum"]}
-                      slot_range = enum_name
-                  else:
-                      # map basic OAS types -> ranges
-                      t = pdef.get("type", "string")
-                      fmt = pdef.get("format")
-                      if t == "string" and fmt == "date-time":
-                          slot_range = "dateTime"
-                      elif t == "boolean":
-                          slot_range = "boolean"
-                      else:
-                          slot_range = "string"
-                  # create slot entry
-                  slot_entry = {"description": pdef.get("description", ""), "range": slot_range}
-                  if pname in required:
-                      slot_entry["required"] = True
-                  # arrays -> multivalued
-                  if pdef.get("type") == "array":
-                      slot_entry["multivalued"] = True
-                      items = pdef.get("items", {})
-                      if "$ref" in items:
-                          slot_entry["range"] = items["$ref"].split("/")[-1]
-                      elif "enum" in items:
-                          enum_name = normalize_enum_name(f"{sname}_{pname}_Enum")
-                          linkml["enums"][enum_name] = {"permissible_values": items["enum"]}
-                          slot_entry["range"] = enum_name
-                      else:
-                          slot_entry["range"] = items.get("type","string")
-                  # identifier heuristics: id, identifier, instructionId etc.
-                  if pname.lower() in ("id", "identifier", "instructionid", "productid", "declarationid"):
-                      slot_entry["identifier"] = True
-                  linkml["slots"][slot_name] = slot_entry
+    out_puml.parent.mkdir(parents=True, exist_ok=True)
+    out_puml.write_text("\n".join(lines), encoding="utf-8")
 
-              # class definition
-              class_entry = {"slots": class_slots}
-              # copy description if present
-              if "description" in sdef:
-                  class_entry["description"] = sdef["description"]
-              linkml["classes"][sname] = class_entry
+    return {
+        "classes_emitted": list(classes.keys()),
+        "relations_emitted": rels,
+        "out": str(out_puml),
+    }
 
-          out = pathlib.Path("docs/flexibility_products_from_oas.linkml.yaml")
-          out.write_text(yaml.safe_dump(linkml, sort_keys=False), encoding='utf-8')
-          print("Wrote", out)
-          PY
+def main(argv):
+    if len(argv) < 3:
+        print("Usage: tools/linkml_to_puml.py <input.linkml.yaml> <output_puml>")
+        sys.exit(2)
 
-      - name: Show generated LinkML
-        run: |
-          echo "---- LINKML (first 200 lines) ----"
-          sed -n '1,200p' docs/flexibility_products_from_oas.linkml.yaml || true
+    input_path = Path(argv[1])
+    out_arg = Path(argv[2])
 
-      - name: Run linkml_to_puml.py to generate PUML
-        run: |
-          # ensure the script exists
-          if [ ! -f tools/linkml_to_puml.py ]; then
-            echo "tools/linkml_to_puml.py not found; aborting."
-            exit 0
-          fi
-          python tools/linkml_to_puml.py docs/flexibility_products_from_oas.linkml.yaml docs/diagrams/generated/flexibility_products_auto.puml
-          echo "Generated PUML files:"
-          ls -la docs/diagrams/generated || true
+    if not input_path.exists():
+        print(f"ERROR: input file not found: {input_path}")
+        sys.exit(1)
 
-      - name: Install Java + Graphviz for PlantUML rendering
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends openjdk-17-jre-headless graphviz curl unzip
-          sudo rm -rf /var/lib/apt/lists/*
+    doc = safe_load(input_path)
+    if doc is None:
+        print("ERROR: empty or invalid LinkML file")
+        sys.exit(1)
 
-      - name: Download plantuml.jar
-        run: |
-          mkdir -p /opt/plantuml
-          curl -sL -o /opt/plantuml/plantuml.jar https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar
-          java -jar /opt/plantuml/plantuml.jar -version || true
+    if out_arg.suffix.lower() == ".puml" or out_arg.name.endswith(".puml"):
+        out_puml = out_arg
+    else:
+        out_puml = out_arg / (input_path.stem + ".puml")
 
-      - name: Render PUML -> SVG and PNG
-        run: |
-          find docs/diagrams -type f -name '*.puml' -print0 | while IFS= read -r -d '' f; do
-            echo "Rendering $f"
-            java -jar /opt/plantuml/plantuml.jar -tsvg "$f" || true
-            java -jar /opt/plantuml/plantuml.jar -tpng "$f" || true
-          done
+    result = generate_puml_from_linkml(doc, out_puml)
 
-      - name: Commit generated LinkML and diagrams (if changed)
-        env:
-          GIT_AUTHOR_NAME: "github-actions[bot]"
-          GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
-        run: |
-          git config user.name "$GIT_AUTHOR_NAME"
-          git config user.email "$GIT_AUTHOR_EMAIL"
-          git add docs/flexibility_products_from_oas.linkml.yaml docs/diagrams || true
-          if ! git diff --cached --quiet; then
-            git commit -m "ci: OpenAPI → LinkML → PUML auto-update [skip ci]" || true
-            git push origin HEAD || true
-            echo "Committed generated artifacts"
-          else
-            echo "No changes to commit"
-          fi
+    print("--- linkml_to_puml.py summary ---")
+    print("Classes emitted:", len(result["classes_emitted"]))
+    for c in result["classes_emitted"][:200]:
+        print(" -", c)
+    print("Relations emitted:", len(result["relations_emitted"]))
+    for r in result["relations_emitted"][:200]:
+        print(" -", r)
+    print("Wrote:", result["out"])
+
+if __name__ == "__main__":
+    main(sys.argv)
