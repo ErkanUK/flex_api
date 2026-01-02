@@ -3,49 +3,77 @@ title Auto-generated diagram from flexibility_products_auto.puml
 skinparam classAttributeIconSize 0
 
 package "Enums" {
-class ServiceStructureEnum <<enumeration>> {
+class FlexibilityProduct_serviceStructure_Enum <<enumeration>> {
   Utilisation Only
   Availability and Utilisation
 }
-class AcceptanceTimingEnum <<enumeration>> {
+class AvailabilityRequirements_acceptanceTiming_Enum <<enumeration>> {
   At Trade
   After Trade
 }
-class YesNo <<enumeration>> {
+class AvailabilityRequirements_availabilityChangesAllowed_Enum <<enumeration>> {
   Yes
   No
 }
-class AvailabilityPaymentUnit <<enumeration>> {
+class AvailabilityRequirements_availabilityPaymentUnit_Enum <<enumeration>> {
   £/MW/h
   £/MWh
   £/h
 }
-class AvailabilityPeriodUnit <<enumeration>> {
+class AvailabilityRequirements_availabilityPeriod_Enum <<enumeration>> {
   Electricity Forward Agreement (EFA) blocks
   Settlement Periods
   Minutes
 }
-class DeliveryExpectationEnum <<enumeration>> {
+class AvailabilityRequirements_availabilityRequestMechanism_Enum <<enumeration>> {
+  Request initiated by DSO
+  Request initiated by FSP
+}
+class AvailabilityRequirements_partialAvailabilityAcceptancePossible_Enum <<enumeration>> {
+  Yes
+  No
+}
+class AvailabilityRequirements_timeVariableAvailabilityVolumesAllowed_Enum <<enumeration>> {
+  Yes
+  No
+}
+class UtilisationRequirements_deliveryExpectation_Enum <<enumeration>> {
   Continuous
   Peak Delivery
 }
-class UtilisationInstructionTimingEnum <<enumeration>> {
+class UtilisationRequirements_partialUtilisationInstructionPossible_Enum <<enumeration>> {
+  Yes
+  No
+}
+class UtilisationRequirements_paymentsDuringResponseTime_Enum <<enumeration>> {
+  Yes
+  No
+}
+class UtilisationRequirements_timeVariableUtilisationVolumesAllowed_Enum <<enumeration>> {
+  Yes
+  No
+}
+class UtilisationRequirements_utilisationInstructionTimings_Enum <<enumeration>> {
   At Trade
   Operational
   Real Time
   Day Ahead
   Week Ahead
 }
-class UtilisationPaymentUnit <<enumeration>> {
+class UtilisationRequirements_utilisationPaymentUnit_Enum <<enumeration>> {
   £/MWh
   £/MW/season
 }
-class UtilisationPeriodUnit <<enumeration>> {
+class UtilisationRequirements_utilisationPeriod_Enum <<enumeration>> {
   Electricity Forward Agreement (EFA) blocks
   Settlement Periods
   Minutes
 }
-class InstructionStatus <<enumeration>> {
+class UtilisationInstruction_deliveryExpectation_Enum <<enumeration>> {
+  Continuous
+  Peak Delivery
+}
+class InstructionAck_status_Enum <<enumeration>> {
   Accepted
   Rejected
   PartiallyAccepted
@@ -53,11 +81,11 @@ class InstructionStatus <<enumeration>> {
 }
 
 class FlexibilityProduct {
-  + id : string  // Identifier for the Flexibility Product
+  + id : string
   - name : string
   - description : string
-  - serviceStructure : ServiceStructureEnum
-  - priceSettingTimescales : string
+  - serviceStructure : FlexibilityProduct_serviceStructure_Enum
+  - priceSettingTimescales : string  // When prices are determined (document lists 'At Trade' and 'Operational').
   - availabilityRequirements : AvailabilityRequirements
   - utilisationRequirements : UtilisationRequirements
   - notes : string
@@ -67,77 +95,69 @@ class FlexibilityProductCreate {
 }
 
 class AvailabilityRequirements {
-  - acceptanceTiming : AcceptanceTimingEnum
-  - availabilityChangesAllowed : YesNo
-  - availabilityPaymentUnit : AvailabilityPaymentUnit
-  - availabilityPeriod : AvailabilityPeriodUnit
-  - availabilityRefinementTiming : string
-  - availabilityRequestMechanism : string
-  - minimumAggregateUnitSize : string
-  - partialAvailabilityAcceptancePossible : YesNo
-  - timeVariableAvailabilityVolumesAllowed : YesNo
+  - acceptanceTiming : AvailabilityRequirements_acceptanceTiming_Enum  // When availability is accepted by the DSO
+  - availabilityChangesAllowed : AvailabilityRequirements_availabilityChangesAllowed_Enum
+  - availabilityPaymentUnit : AvailabilityRequirements_availabilityPaymentUnit_Enum  // Units used for availability payments (from document)
+  - availabilityPeriod : AvailabilityRequirements_availabilityPeriod_Enum
+  - availabilityRefinementTiming : string  // Document gives examples (allowed / not allowed / week ahead etc.).
+  - availabilityRequestMechanism : AvailabilityRequirements_availabilityRequestMechanism_Enum
+  - minimumAggregateUnitSize : string  // Free text (document examples: 'e.g. 50kW, 1MW, N/A').
+  - partialAvailabilityAcceptancePossible : AvailabilityRequirements_partialAvailabilityAcceptancePossible_Enum
+  - timeVariableAvailabilityVolumesAllowed : AvailabilityRequirements_timeVariableAvailabilityVolumesAllowed_Enum
 }
 
 class UtilisationRequirements {
-  - deliveryExpectation : DeliveryExpectationEnum
-  - maximumResponseTime : string
-  - minimumUtilisationTime : string
-  - minimumUtilisationVolume : string
-  - partialUtilisationInstructionPossible : YesNo
-  - paymentsDuringResponseTime : YesNo
-  - timeVariableUtilisationVolumesAllowed : YesNo
-  - utilisationInstructionTimings : UtilisationInstructionTimingEnum[]
-  - utilisationPaymentUnit : UtilisationPaymentUnit
-  - utilisationPeriod : UtilisationPeriodUnit
+  - deliveryExpectation : UtilisationInstruction_deliveryExpectation_Enum
+  - maximumResponseTime : string  // Either minutes (e.g. '2 minutes', '15 minutes') or 'N/A'.
+  - minimumUtilisationTime : string  // Document examples: '60 minutes (Hour)', '30 minutes (Half Hour)'.
+  - minimumUtilisationVolume : string  // Free text; document uses 'End state: N/A / Interim: differs per DNO'.
+  - partialUtilisationInstructionPossible : UtilisationRequirements_partialUtilisationInstructionPossible_Enum
+  - paymentsDuringResponseTime : UtilisationRequirements_paymentsDuringResponseTime_Enum
+  - timeVariableUtilisationVolumesAllowed : UtilisationRequirements_timeVariableUtilisationVolumesAllowed_Enum
+  - utilisationInstructionTimings : UtilisationRequirements_utilisationInstructionTimings_Enum[]
+  - utilisationPaymentUnit : UtilisationRequirements_utilisationPaymentUnit_Enum
+  - utilisationPeriod : UtilisationRequirements_utilisationPeriod_Enum
 }
 
 class AvailabilityDeclaration {
-  - productId : string  // Flexibility product id (references FlexibilityProduct.id)
+  + productId : string
   - providerId : string
   - availabilityWindowStart : dateTime
   - availabilityWindowEnd : dateTime
-  - declaredVolume : string
-  - timeVariableVolumes : TimeVariableVolume[]  // Optional time series of volumes within the availability window
-  - metadata : string
+  - declaredVolume : string  // Declared availability volume (units as agreed with DSO; doc typically uses kW/MW).
+  - timeVariableVolumes : object[]
+  - metadata : string  // Free-form metadata for interim/end-state flags (DSO-specific).
 }
 
 class AvailabilityResponse {
-  - declarationId : string
+  + declarationId : string
   - acceptedVolume : string
   - partialAcceptance : boolean
   - acceptanceTimestamp : dateTime
-  - response_notes : string
-}
-
-class TimeVariableVolume {
-  - periodStart : dateTime
-  - periodEnd : dateTime
-  - volume : string
+  - notes : string
 }
 
 class UtilisationInstruction {
-  - productId : string  // Flexibility product id (references FlexibilityProduct.id)
-  + instructionId : string  // Instruction identifier
+  + productId : string
+  + instructionId : string
   - targetStart : dateTime
   - targetEnd : dateTime
-  - instructionVolume : string
+  - instructionVolume : string  // Volume to deliver (kW/MW as per product agreement)
   - partialInstruction : boolean
-  - responseTimeRequirement : string
-  - deliveryExpectation : DeliveryExpectationEnum
-  - timeVariableVolumesForInstruction : TimeVariableVolume[]
+  - responseTimeRequirement : string  // e.g. '2 minutes', '15 minutes', or 'N/A' per product
+  - deliveryExpectation : UtilisationInstruction_deliveryExpectation_Enum
+  - timeVariableVolumes : object[]
 }
 
 class InstructionAck {
-  - ack_instructionId : string
-  - ack_providerId : string
+  + instructionId : string
+  - providerId : string
   - ackTimestamp : dateTime
-  - status : InstructionStatus
-  - ack_notes : string
+  - status : InstructionAck_status_Enum
+  - notes : string
 }
 
 FlexibilityProduct --> AvailabilityRequirements : availabilityRequirements
 FlexibilityProduct --> UtilisationRequirements : utilisationRequirements
-AvailabilityDeclaration --> TimeVariableVolume : timeVariableVolumes
-UtilisationInstruction --> TimeVariableVolume : timeVariableVolumesForInstruction
 
 @enduml

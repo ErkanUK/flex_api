@@ -1,0 +1,317 @@
+id: http://example.org/flexibility-products-from-oas
+name: flexibility_products_from_oas
+version: 1.0.0
+prefixes:
+  ex: http://example.org/
+  xsd: http://www.w3.org/2001/XMLSchema#
+default_prefix: ex
+types:
+  string:
+    base: xsd:string
+  dateTime:
+    base: xsd:dateTime
+  boolean:
+    base: xsd:boolean
+enums:
+  FlexibilityProduct_serviceStructure_Enum:
+    permissible_values:
+    - Utilisation Only
+    - Availability and Utilisation
+  AvailabilityRequirements_acceptanceTiming_Enum:
+    permissible_values:
+    - At Trade
+    - After Trade
+  AvailabilityRequirements_availabilityChangesAllowed_Enum:
+    permissible_values:
+    - 'Yes'
+    - 'No'
+  AvailabilityRequirements_availabilityPaymentUnit_Enum:
+    permissible_values:
+    - "\xA3/MW/h"
+    - "\xA3/MWh"
+    - "\xA3/h"
+  AvailabilityRequirements_availabilityPeriod_Enum:
+    permissible_values:
+    - Electricity Forward Agreement (EFA) blocks
+    - Settlement Periods
+    - Minutes
+  AvailabilityRequirements_availabilityRequestMechanism_Enum:
+    permissible_values:
+    - Request initiated by DSO
+    - Request initiated by FSP
+  AvailabilityRequirements_partialAvailabilityAcceptancePossible_Enum:
+    permissible_values:
+    - 'Yes'
+    - 'No'
+  AvailabilityRequirements_timeVariableAvailabilityVolumesAllowed_Enum:
+    permissible_values:
+    - 'Yes'
+    - 'No'
+  UtilisationRequirements_deliveryExpectation_Enum:
+    permissible_values:
+    - Continuous
+    - Peak Delivery
+  UtilisationRequirements_partialUtilisationInstructionPossible_Enum:
+    permissible_values:
+    - 'Yes'
+    - 'No'
+  UtilisationRequirements_paymentsDuringResponseTime_Enum:
+    permissible_values:
+    - 'Yes'
+    - 'No'
+  UtilisationRequirements_timeVariableUtilisationVolumesAllowed_Enum:
+    permissible_values:
+    - 'Yes'
+    - 'No'
+  UtilisationRequirements_utilisationInstructionTimings_Enum:
+    permissible_values:
+    - At Trade
+    - Operational
+    - Real Time
+    - Day Ahead
+    - Week Ahead
+  UtilisationRequirements_utilisationPaymentUnit_Enum:
+    permissible_values:
+    - "\xA3/MWh"
+    - "\xA3/MW/season"
+  UtilisationRequirements_utilisationPeriod_Enum:
+    permissible_values:
+    - Electricity Forward Agreement (EFA) blocks
+    - Settlement Periods
+    - Minutes
+  UtilisationInstruction_deliveryExpectation_Enum:
+    permissible_values:
+    - Continuous
+    - Peak Delivery
+  InstructionAck_status_Enum:
+    permissible_values:
+    - Accepted
+    - Rejected
+    - PartiallyAccepted
+slots:
+  id:
+    description: ''
+    range: string
+    required: true
+    identifier: true
+  name:
+    description: ''
+    range: string
+    required: true
+  description:
+    description: ''
+    range: string
+  serviceStructure:
+    description: ''
+    range: FlexibilityProduct_serviceStructure_Enum
+    required: true
+  priceSettingTimescales:
+    description: When prices are determined (document lists 'At Trade' and 'Operational').
+    range: string
+  availabilityRequirements:
+    description: ''
+    range: AvailabilityRequirements
+  utilisationRequirements:
+    description: ''
+    range: UtilisationRequirements
+  notes:
+    description: ''
+    range: string
+  acceptanceTiming:
+    description: When availability is accepted by the DSO
+    range: AvailabilityRequirements_acceptanceTiming_Enum
+  availabilityChangesAllowed:
+    description: ''
+    range: AvailabilityRequirements_availabilityChangesAllowed_Enum
+  availabilityPaymentUnit:
+    description: Units used for availability payments (from document)
+    range: AvailabilityRequirements_availabilityPaymentUnit_Enum
+  availabilityPeriod:
+    description: ''
+    range: AvailabilityRequirements_availabilityPeriod_Enum
+  availabilityRefinementTiming:
+    description: Document gives examples (allowed / not allowed / week ahead etc.).
+    range: string
+  availabilityRequestMechanism:
+    description: ''
+    range: AvailabilityRequirements_availabilityRequestMechanism_Enum
+  minimumAggregateUnitSize:
+    description: 'Free text (document examples: ''e.g. 50kW, 1MW, N/A'').'
+    range: string
+  partialAvailabilityAcceptancePossible:
+    description: ''
+    range: AvailabilityRequirements_partialAvailabilityAcceptancePossible_Enum
+  timeVariableAvailabilityVolumesAllowed:
+    description: ''
+    range: AvailabilityRequirements_timeVariableAvailabilityVolumesAllowed_Enum
+  deliveryExpectation:
+    description: ''
+    range: UtilisationInstruction_deliveryExpectation_Enum
+  maximumResponseTime:
+    description: Either minutes (e.g. '2 minutes', '15 minutes') or 'N/A'.
+    range: string
+  minimumUtilisationTime:
+    description: 'Document examples: ''60 minutes (Hour)'', ''30 minutes (Half Hour)''.'
+    range: string
+  minimumUtilisationVolume:
+    description: 'Free text; document uses ''End state: N/A / Interim: differs per
+      DNO''.'
+    range: string
+  partialUtilisationInstructionPossible:
+    description: ''
+    range: UtilisationRequirements_partialUtilisationInstructionPossible_Enum
+  paymentsDuringResponseTime:
+    description: ''
+    range: UtilisationRequirements_paymentsDuringResponseTime_Enum
+  timeVariableUtilisationVolumesAllowed:
+    description: ''
+    range: UtilisationRequirements_timeVariableUtilisationVolumesAllowed_Enum
+  utilisationInstructionTimings:
+    description: ''
+    range: UtilisationRequirements_utilisationInstructionTimings_Enum
+    multivalued: true
+  utilisationPaymentUnit:
+    description: ''
+    range: UtilisationRequirements_utilisationPaymentUnit_Enum
+  utilisationPeriod:
+    description: ''
+    range: UtilisationRequirements_utilisationPeriod_Enum
+  productId:
+    description: ''
+    range: string
+    required: true
+    identifier: true
+  providerId:
+    description: ''
+    range: string
+  availabilityWindowStart:
+    description: ''
+    range: dateTime
+    required: true
+  availabilityWindowEnd:
+    description: ''
+    range: dateTime
+    required: true
+  declaredVolume:
+    description: Declared availability volume (units as agreed with DSO; doc typically
+      uses kW/MW).
+    range: string
+  timeVariableVolumes:
+    description: ''
+    range: object
+    multivalued: true
+  metadata:
+    description: Free-form metadata for interim/end-state flags (DSO-specific).
+    range: string
+  declarationId:
+    description: ''
+    range: string
+    identifier: true
+  acceptedVolume:
+    description: ''
+    range: string
+  partialAcceptance:
+    description: ''
+    range: boolean
+  acceptanceTimestamp:
+    description: ''
+    range: dateTime
+  instructionId:
+    description: ''
+    range: string
+    identifier: true
+  targetStart:
+    description: ''
+    range: dateTime
+    required: true
+  targetEnd:
+    description: ''
+    range: dateTime
+    required: true
+  instructionVolume:
+    description: Volume to deliver (kW/MW as per product agreement)
+    range: string
+    required: true
+  partialInstruction:
+    description: ''
+    range: boolean
+  responseTimeRequirement:
+    description: e.g. '2 minutes', '15 minutes', or 'N/A' per product
+    range: string
+  ackTimestamp:
+    description: ''
+    range: dateTime
+  status:
+    description: ''
+    range: InstructionAck_status_Enum
+classes:
+  FlexibilityProduct:
+    slots:
+    - id
+    - name
+    - description
+    - serviceStructure
+    - priceSettingTimescales
+    - availabilityRequirements
+    - utilisationRequirements
+    - notes
+  FlexibilityProductCreate:
+    slots: []
+  AvailabilityRequirements:
+    slots:
+    - acceptanceTiming
+    - availabilityChangesAllowed
+    - availabilityPaymentUnit
+    - availabilityPeriod
+    - availabilityRefinementTiming
+    - availabilityRequestMechanism
+    - minimumAggregateUnitSize
+    - partialAvailabilityAcceptancePossible
+    - timeVariableAvailabilityVolumesAllowed
+  UtilisationRequirements:
+    slots:
+    - deliveryExpectation
+    - maximumResponseTime
+    - minimumUtilisationTime
+    - minimumUtilisationVolume
+    - partialUtilisationInstructionPossible
+    - paymentsDuringResponseTime
+    - timeVariableUtilisationVolumesAllowed
+    - utilisationInstructionTimings
+    - utilisationPaymentUnit
+    - utilisationPeriod
+  AvailabilityDeclaration:
+    slots:
+    - productId
+    - providerId
+    - availabilityWindowStart
+    - availabilityWindowEnd
+    - declaredVolume
+    - timeVariableVolumes
+    - metadata
+  AvailabilityResponse:
+    slots:
+    - declarationId
+    - acceptedVolume
+    - partialAcceptance
+    - acceptanceTimestamp
+    - notes
+  UtilisationInstruction:
+    slots:
+    - productId
+    - instructionId
+    - targetStart
+    - targetEnd
+    - instructionVolume
+    - partialInstruction
+    - responseTimeRequirement
+    - deliveryExpectation
+    - timeVariableVolumes
+  InstructionAck:
+    slots:
+    - instructionId
+    - providerId
+    - ackTimestamp
+    - status
+    - notes
+examples: {}
