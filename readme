@@ -8,7 +8,16 @@ We strive to create machine readable models. Therefor we use LinkML, SKOS and RD
 
 This folder contains helper scripts used to generate and maintain repo artifacts.
 
-## `render-diagrams.sh`
+#ChatGPT
+The GPT that creates an OAS spec file from a service description can be found here:
+https://chatgpt.com/share/e/6957fc13-d28c-8016-b731-84468fc79a9f 
+
+
+#Workflow
+
+The workflow will generate diagrams in docs/diagrams/generated.
+
+The workflow checks for services and will generate an Index.html page.
 
 Renders PlantUML `.puml` files found under `docs/diagrams` and `docs/maps` to SVG and/or PNG.
 
